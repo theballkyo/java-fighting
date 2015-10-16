@@ -112,14 +112,8 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 		moveScreen();
 		
 		john.fixOverFlow(mapW, mapH);
-		if(camera.position.x > mapW - w / 2)
-			camera.position.x = mapW - w / 2;
-		if(camera.position.y > mapH - h / 2)
-			camera.position.y = mapH - h / 2;
-		if(camera.position.x < w / 2)
-			camera.position.x = w / 2;
-		if(camera.position.y < h / 2)
-			camera.position.y = h / 2;
+		
+		fixOverFlow();
 		//Gdx.gl.glClearColor(r, g, b, 1);
 		//Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 	
@@ -176,14 +170,16 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 
 	@Override
 	public boolean touchDragged(int screenX, int screenY, int pointer) {
+		camera.translate(posX-screenX, -(posY-screenY));
+		fixOverFlow();
 		if(screenX < 0)
-			Gdx.input.setCursorPosition(0, Gdx.input.getY());
+			Gdx.input.setCursorPosition(0, screenY);
 		if(screenY < mouse.getHeight())
-			Gdx.input.setCursorPosition(Gdx.input.getX(), mouse.getHeight());
+			Gdx.input.setCursorPosition(screenX, mouse.getHeight());
 		if(screenX > w - mouse.getWidth())
-			Gdx.input.setCursorPosition((int) (w - mouse.getWidth()), Gdx.input.getY());
+			Gdx.input.setCursorPosition((int) (w - mouse.getWidth()), screenY);
 		if(screenY > h )
-			Gdx.input.setCursorPosition(Gdx.input.getX(), (int) h);
+			Gdx.input.setCursorPosition(screenX, (int) h);
 		posX = Gdx.input.getX();
         posY = Gdx.input.getY();
 		return false;
@@ -215,6 +211,8 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 	}
 	
 	public void moveScreen() {
+		if(Gdx.input.isTouched())
+			return;
 		if(posX < 32) {
 			camera.translate(-16, 0);
 		}
@@ -227,5 +225,16 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 		if(posY > h - 32) {
 			camera.translate(0, -16);
 		}
+	}
+	
+	public void fixOverFlow() {
+		if(camera.position.x > mapW - w / 2)
+			camera.position.x = mapW - w / 2;
+		if(camera.position.y > mapH - h / 2)
+			camera.position.y = mapH - h / 2;
+		if(camera.position.x < w / 2)
+			camera.position.x = w / 2;
+		if(camera.position.y < h / 2)
+			camera.position.y = h / 2;
 	}
 }
