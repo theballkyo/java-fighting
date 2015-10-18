@@ -4,8 +4,10 @@ import java.util.Random;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input.Buttons;
 import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.InputProcessor;
+import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -34,6 +36,8 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 	Texture mouse;
 	int speed = 1;
 	Task changeColor;
+	
+	Music mainMusic;
 	float posX, posY, w, h;
 	int mapW, mapH;
 	@Override
@@ -56,7 +60,9 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 		
 		font = new BitmapFont();
         font.setColor(Color.RED);
- 
+        
+        mainMusic = Gdx.audio.newMusic(Gdx.files.internal("assets/sounds/main.mp3"));
+        
 		batch = new SpriteBatch();
 		batchFix  = new SpriteBatch();
 		john = new John().run();
@@ -72,7 +78,7 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 		Timer.schedule(new Task(){
 		    @Override
 		    public void run() {
-		    	Gdx.graphics.setTitle(String.format("%s - %d FPS :: John x%d y%d :: mouse x%.1f y%.1f :: RGB %.2f %.2f %.2f :: Developer mode", 
+		    	Gdx.graphics.setTitle(String.format("%s - %d FPS :: Pika x%d y%d :: mouse x%.1f y%.1f :: RGB %.2f %.2f %.2f :: Memory %.2f MB. :: Developer mode", 
 		    			Game.title,
 		    			Gdx.graphics.getFramesPerSecond(),
 		    			john.getX(),
@@ -81,32 +87,34 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 		    			posY,
 		    			r,
 		    			g,
-		    			b));
+		    			b,
+		    			Gdx.app.getNativeHeap() / 1024.0 / 1024.0));
 		    }
 		}, 0.0f, 1/60f);
 		Gdx.input.setInputProcessor(this);
+		
+		mainMusic.play();
+		mainMusic.setLooping(true);
 	}
 
 	@Override
 	public void render() {
+		Gdx.gl.glClearColor(0, 0, 0, 1);
+		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 		camera.update();
         tiledMapRenderer.setView(camera);
         tiledMapRenderer.render();
 		if(Gdx.input.isKeyPressed(Keys.RIGHT)) {
 			john.plusX(speed);
-			camera.translate(32, 0);
 		}
 		else if(Gdx.input.isKeyPressed(Keys.LEFT)) {
 			john.plusX(-speed);
-			camera.translate(-32, 0);
 		}
 		if(Gdx.input.isKeyPressed(Keys.UP)) {
 			john.plusY(speed);
-			camera.translate(0, 32);
 		}
 		else if(Gdx.input.isKeyPressed(Keys.DOWN)) {
 			john.plusY(-speed);
-			camera.translate(0, -32);
 		}
 		
 		moveScreen();
@@ -114,8 +122,6 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 		john.fixOverFlow(mapW, mapH);
 		
 		fixOverFlow();
-		//Gdx.gl.glClearColor(r, g, b, 1);
-		//Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 	
 		batch.begin();
 		batch.setProjectionMatrix(camera.combined);
@@ -127,10 +133,11 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 			
 			font.draw(batchFix, String.format("Speed: %d :: isAnimation %s", speed, john.isAnimation()), 5, Gdx.graphics.getHeight()-5);
 			font.draw(batchFix, String.format("+,- for up-down speed, mouse click for toggle Animation", speed, john.isAnimation()), 5, Gdx.graphics.getHeight()-25);
-			font.draw(batchFix, String.format("Camera x%.1f y%.1f", camera.position.x, camera.position.y), 5, Gdx.graphics.getHeight()-45);
-			
+			font.draw(batchFix, String.format("Camera x%.1f y%.1f :: Zoom %.2f", camera.position.x, camera.position.y, camera.zoom), 5, Gdx.graphics.getHeight()-45);
+			font.draw(batchFix, String.format("Play music: %s level %.1f %%", mainMusic.isPlaying(), mainMusic.getVolume() * 100), 5, Gdx.graphics.getHeight()-65);
 		}
-		batchFix.draw(mouse, posX, h - posY);
+		if(Gdx.input.isCursorCatched())
+			batchFix.draw(mouse, posX, h - posY);
 		batchFix.end();
 	}
 
@@ -140,6 +147,10 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 			speed++;
 		else if(keycode == Keys.MINUS)
 			speed--;
+		if(keycode == Keys.ESCAPE) {
+			Gdx.input.setCursorCatched(!Gdx.input.isCursorCatched());
+			Gdx.input.setCursorPosition((int)posX, (int)posY);
+		}
 		if(speed <= 0)
 			speed = 1;
 		return true;
@@ -159,17 +170,22 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 
 	@Override
 	public boolean touchDown(int screenX, int screenY, int pointer, int button) {
+		if(!Gdx.input.isCursorCatched())
+			Gdx.input.setCursorCatched(true);
 		return false;
 	}
 
 	@Override
 	public boolean touchUp(int screenX, int screenY, int pointer, int button) {
-		john.toggle();
+		if(button == Buttons.RIGHT)
+			john.toggle();
 		return false;
 	}
 
 	@Override
 	public boolean touchDragged(int screenX, int screenY, int pointer) {
+		if(!Gdx.input.isCursorCatched())
+			return false;
 		camera.translate(posX-screenX, -(posY-screenY));
 		fixOverFlow();
 		if(screenX < 0)
@@ -187,6 +203,10 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 
 	@Override
 	public boolean mouseMoved(int screenX, int screenY) {
+		posX = Gdx.input.getX();
+        posY = Gdx.input.getY();
+		if(!Gdx.input.isCursorCatched())
+			return false;
 		Vector3 touchPos = new Vector3();
         touchPos.set(Gdx.input.getX() , Gdx.input.getY(), 0);
         camera.unproject(touchPos);
@@ -206,12 +226,13 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 
 	@Override
 	public boolean scrolled(int amount) {
-		// TODO Auto-generated method stub
+		System.out.println(amount);
+		camera.zoom += amount * 0.03f;
 		return false;
 	}
 	
 	public void moveScreen() {
-		if(Gdx.input.isTouched())
+		if(Gdx.input.isTouched() || !Gdx.input.isCursorCatched())
 			return;
 		if(posX < 32) {
 			camera.translate(-16, 0);
@@ -237,4 +258,5 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 		if(camera.position.y < h / 2)
 			camera.position.y = h / 2;
 	}
+	
 }
