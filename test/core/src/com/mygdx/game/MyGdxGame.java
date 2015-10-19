@@ -1,5 +1,6 @@
 package com.mygdx.game;
 
+import java.time.LocalTime;
 import java.util.Random;
 
 import com.badlogic.gdx.ApplicationAdapter;
@@ -24,7 +25,9 @@ import com.badlogic.gdx.utils.Timer.Task;
 import com.mygdx.charactor.John;
 
 public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
-	private BitmapFont font;
+	
+	final long startTime = System.currentTimeMillis();
+	BitmapFont font;
 	SpriteBatch batch;
 	SpriteBatch batchFix;
 	John john;
@@ -78,7 +81,7 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 		Timer.schedule(new Task(){
 		    @Override
 		    public void run() {
-		    	Gdx.graphics.setTitle(String.format("%s - %d FPS :: Pika x%d y%d :: mouse x%.1f y%.1f :: RGB %.2f %.2f %.2f :: Memory %.2f MB. :: Developer mode", 
+		    	Gdx.graphics.setTitle(String.format("%s - %d FPS :: Pika x%d y%d :: mouse x%.1f y%.1f :: RGB %.2f %.2f %.2f :: Memory %.2f MB. :: Running time %s :: Developer mode", 
 		    			Game.title,
 		    			Gdx.graphics.getFramesPerSecond(),
 		    			john.getX(),
@@ -88,7 +91,8 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 		    			r,
 		    			g,
 		    			b,
-		    			Gdx.app.getNativeHeap() / 1024.0 / 1024.0));
+		    			Gdx.app.getNativeHeap() / 1024.0 / 1024.0,
+		    			LocalTime.ofSecondOfDay((System.currentTimeMillis() - startTime) / 1000)));
 		    }
 		}, 0.0f, 1/60f);
 		Gdx.input.setInputProcessor(this);
