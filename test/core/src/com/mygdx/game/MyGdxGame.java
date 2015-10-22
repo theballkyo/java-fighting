@@ -22,6 +22,8 @@ import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Timer;
 import com.badlogic.gdx.utils.Timer.Task;
+import com.mygdx.Handle.GameClient;
+import com.mygdx.Handle.GameServer;
 import com.mygdx.charactor.John;
 
 public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
@@ -43,8 +45,12 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 	Music mainMusic;
 	float posX, posY, w, h;
 	int mapW, mapH;
+	
+	GameServer gameServer;
+	GameClient user, user2;
 	@Override
 	public void create () {
+		
 		Gdx.input.setCursorCatched(true);
 		mouse = new Texture("assets/mouse.jpg");
 		w = Gdx.graphics.getWidth();
@@ -78,6 +84,16 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 		    }
 		}, 0.0f, 0.1f);
 		
+		gameServer = new GameServer();
+		gameServer.runSocket();
+		// gameServer.connect();
+		user = new GameClient();
+		//user.runSocket();
+		user.connect();
+		
+		user2 = new GameClient();
+		user2.connect();
+		//gameServer.ping();
 		Timer.schedule(new Task(){
 		    @Override
 		    public void run() {
@@ -97,8 +113,25 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 		}, 0.0f, 1/60f);
 		Gdx.input.setInputProcessor(this);
 		
-		mainMusic.play();
+		// mainMusic.play();
 		mainMusic.setLooping(true);
+		
+		// Update Game Logic
+		new Thread(new Runnable() {
+			public void run() {
+				long sTime = System.currentTimeMillis();
+				while(true){
+					if(sTime > System.currentTimeMillis() - 1000)
+						continue;
+					// gameServer.ping();
+					user.ping();
+					user2.ping();
+					
+					// user.updateCharactor("John", john.getX(), john.getY());
+					sTime = System.currentTimeMillis();
+				}
+			}
+		}).start();
 	}
 
 	@Override
